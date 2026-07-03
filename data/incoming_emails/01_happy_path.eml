@@ -1,0 +1,31 @@
+From: k.mueller@customerA-hausgeraete.example.com
+To: sales@schott-glass.example.com
+Subject: Angebotsanfrage 4K-WH Kochfeld
+Date: Mon, 30 Jun 2026 09:15:00 +0200
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="boundary-001"
+
+--boundary-001
+Content-Type: text/plain; charset="utf-8"
+
+Sehr geehrte Damen und Herren,
+
+anbei die Zeichnung 4K-WH fuer unser Kochfeldprojekt.
+Wir benoetigen 100 Einheiten aus schwarzer Glaskeramik.
+Liefertermin: 15. August 2026.
+
+Bitte um Angebot.
+
+Mit freundlichen Gruessen
+Klaus Mueller
+Einkauf
+Customer A Hausgeraete GmbH
+
+--boundary-001
+Content-Type: application/pdf; name="4K-WH.pdf"
+Content-Disposition: attachment; filename="4K-WH.pdf"
+Content-Transfer-Encoding: base64
+X-Attachment-File-Path: ./attachments/drawing_clean.pdf
+
+PLACEHOLDER
+--boundary-001--
