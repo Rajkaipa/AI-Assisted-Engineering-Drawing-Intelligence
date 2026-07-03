@@ -1,0 +1,22 @@
+# Core AI
+google-generativeai==0.8.3
+
+# PDF processing
+PyMuPDF==1.24.14
+Pillow==11.0.0
+
+# Data validation & structured output
+pydantic==2.10.3
+pydantic-settings==2.7.0
+
+# Configuration & env
+python-dotenv==1.0.1
+
+# Web app
+streamlit==1.41.1
+
+# Notebook — ipykernel is enough for VS Code
+ipykernel==6.29.5
+
+# Utilities
+python-json-logger==2.0.7
