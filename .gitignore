@@ -1,38 +1,20 @@
-# Environment
-.env
-.venv/
-venv/
-env/
+# Uploaded artefacts from Streamlit — not part of the demo
+data/uploaded_pdfs/
+data/incoming_emails/_uploaded_*.eml
+data/incoming_emails/_temp_*
+
+# Ad-hoc test emails — not required for demo scenarios
+data/test_emails/
 
 # Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-.Python
-*.egg-info/
-build/
-dist/
+.venv/
+.env
 
-# Jupyter
+# Notebook checkpoints
 .ipynb_checkpoints/
-*.ipynb_checkpoints
-
-# IDE
-.vscode/
-.idea/
-*.swp
 
 # OS
-Thumbs.db
 .DS_Store
-
-# Streamlit
-.streamlit/secrets.toml
-
-# Data (large files should not be in git)
-data/*.pdf
-!data/example_drawing.pdf
-
-# Slides working files
-slides/*.pptx~
+Thumbs.db
