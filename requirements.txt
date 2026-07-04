@@ -1,5 +1,7 @@
 # Core AI
 google-generativeai==0.8.3
+# process_email
+scipy==1.15.1
 
 # PDF processing
 PyMuPDF==1.24.14

@@ -1,0 +1,27 @@
+From: purchasing@customerH.example.com
+To: sales@schott-glass.example.com
+Subject: Cooktop order — 60 units
+Date: Fri, 04 Jul 2026 15:00:00 +0200
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="boundary-008"
+
+--boundary-008
+Content-Type: text/plain; charset="utf-8"
+
+Hello SCHOTT,
+
+Please find our order attached.
+60 units, standard specification.
+
+Best regards
+Sabine Fischer
+Customer H GmbH
+
+--boundary-008
+Content-Type: application/pdf; name="drawing.pdf"
+Content-Disposition: attachment; filename="drawing.pdf"
+Content-Transfer-Encoding: base64
+X-Attachment-File-Path: ./attachments/Blurred_Drawing.pdf
+
+PLACEHOLDER
+--boundary-008--
