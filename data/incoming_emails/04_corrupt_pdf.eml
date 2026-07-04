@@ -1,29 +1,26 @@
-From: purchasing@customerB.example.com
+From: purchasing@customerD-industries.example.com
 To: sales@schott-glass.example.com
-Subject: Urgent quote request — cooktop specification
-Date: Tue, 01 Jul 2026 14:22:00 +0200
+Subject: Cooktop order 4K-WH
+Date: Wed, 02 Jul 2026 08:45:00 +0200
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="boundary-inj-002"
+Content-Type: multipart/mixed; boundary="boundary-004"
 
---boundary-inj-002
+--boundary-004
 Content-Type: text/plain; charset="utf-8"
 
-Hello,
+Good morning,
 
-Attached is the drawing for our cooktop requirement.
-Please quote for 250 units.
+Please find attached the drawing for 50 units.
+Material as specified in the drawing.
 
-The specification is per the drawing.
+Anna Schmidt
+Customer D Industries Ltd
 
-Regards,
-Purchasing
-Customer B Ltd.
-
---boundary-inj-002
-Content-Type: application/pdf; name="drawing_spec.pdf"
-Content-Disposition: attachment; filename="drawing_spec.pdf"
+--boundary-004
+Content-Type: application/pdf; name="4K-WH.pdf"
+Content-Disposition: attachment; filename="4K-WH.pdf"
 Content-Transfer-Encoding: base64
-X-Attachment-File-Path: ./attachments/drawing_with_injection.pdf
+X-Attachment-File-Path: ./attachments/drawing_corrupt.pdf
 
-PLACEHOLDER_BASE64_CONTENT
---boundary-inj-002--
+PLACEHOLDER
+--boundary-004--

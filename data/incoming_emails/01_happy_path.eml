@@ -1,6 +1,6 @@
-From: k.mueller@customerA-hausgeraete.example.com
+From: k.mueller@customerA-appliances.example.com
 To: sales@schott-glass.example.com
-Subject: Angebotsanfrage 4K-WH Kochfeld
+Subject: Quote request — cooktop 4K-WH, 100 units
 Date: Mon, 30 Jun 2026 09:15:00 +0200
 MIME-Version: 1.0
 Content-Type: multipart/mixed; boundary="boundary-001"
@@ -8,18 +8,18 @@ Content-Type: multipart/mixed; boundary="boundary-001"
 --boundary-001
 Content-Type: text/plain; charset="utf-8"
 
-Sehr geehrte Damen und Herren,
+Dear Sir or Madam,
 
-anbei die Zeichnung 4K-WH fuer unser Kochfeldprojekt.
-Wir benoetigen 100 Einheiten aus schwarzer Glaskeramik.
-Liefertermin: 15. August 2026.
+Please find attached drawing 4K-WH for our cooktop project.
+We require 100 units in black glass ceramic.
+Requested delivery: 15 August 2026.
 
-Bitte um Angebot.
+We would appreciate your quote.
 
-Mit freundlichen Gruessen
+Best regards
 Klaus Mueller
-Einkauf
-Customer A Hausgeraete GmbH
+Purchasing
+Customer A Appliances GmbH
 
 --boundary-001
 Content-Type: application/pdf; name="4K-WH.pdf"

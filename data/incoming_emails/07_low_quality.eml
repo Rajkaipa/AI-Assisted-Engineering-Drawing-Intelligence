@@ -1,0 +1,27 @@
+From: purchasing@customerG.example.com
+To: sales@schott-glass.example.com
+Subject: Quote request — cooktop 4K-WH, 40 units
+Date: Fri, 04 Jul 2026 09:00:00 +0200
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="boundary-007"
+
+--boundary-007
+Content-Type: text/plain; charset="utf-8"
+
+Hello,
+
+Please find attached the drawing for our cooktop order.
+40 units, standard specification.
+
+Best regards
+Julia Meier
+Customer G AG
+
+--boundary-007
+Content-Type: application/pdf; name="drawing.pdf"
+Content-Disposition: attachment; filename="drawing.pdf"
+Content-Transfer-Encoding: base64
+X-Attachment-File-Path: ./attachments/drawing_low_quality.pdf
+
+PLACEHOLDER
+--boundary-007--

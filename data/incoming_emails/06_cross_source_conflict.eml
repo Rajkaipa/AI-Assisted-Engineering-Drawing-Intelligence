@@ -1,34 +1,34 @@
-From: purchasing@customerE.example.com
+From: m.koenig@customerF.example.com
 To: sales@schott-glass.example.com
-Subject: Material change — cooktop order 4K-WH
+Subject: Cooktop order — 200 units
 Date: Thu, 03 Jul 2026 11:00:00 +0200
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="boundary-conf-005"
+Content-Type: multipart/mixed; boundary="boundary-006"
 
---boundary-conf-005
+--boundary-006
 Content-Type: text/plain; charset="utf-8"
 
-Hello SCHOTT team,
+Hello,
 
-Attached is the drawing for our cooktop order.
+Order as follows:
 
-IMPORTANT — please note the following updates versus the attached drawing:
-- Material: Robax red (not black glass ceramic as shown in drawing)
-- Overall dimensions: 500 x 450 mm (not 580 x 519 as shown)
-- Quantity: 200 units
+Drawing: 4K-WH
+Material: Robax Red
+Dimensions: 500 x 450 mm
+Quantity: 200 units
+Delivery: end of August 2026
 
-Please quote based on these updated specifications, not the drawing.
+Drawing attached.
 
-Regards,
 Michael Koenig
-Purchasing Lead
-Customer E GmbH
+Purchasing
+Customer F GmbH
 
---boundary-conf-005
-Content-Type: application/pdf; name="drawing_4K-WH.pdf"
-Content-Disposition: attachment; filename="drawing_4K-WH.pdf"
+--boundary-006
+Content-Type: application/pdf; name="4K-WH.pdf"
+Content-Disposition: attachment; filename="4K-WH.pdf"
 Content-Transfer-Encoding: base64
 X-Attachment-File-Path: ./attachments/drawing_clean.pdf
 
-PLACEHOLDER_BASE64_CONTENT
---boundary-conf-005--
+PLACEHOLDER
+--boundary-006--

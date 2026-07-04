@@ -1,29 +1,19 @@
-From: purchasing@customerB.example.com
+From: t.becker@customerE.example.com
 To: sales@schott-glass.example.com
-Subject: Urgent quote request — cooktop specification
-Date: Tue, 01 Jul 2026 14:22:00 +0200
+Subject: Quote request — 4K-WH, 75 units
+Date: Wed, 02 Jul 2026 16:10:00 +0200
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="boundary-inj-002"
-
---boundary-inj-002
 Content-Type: text/plain; charset="utf-8"
 
-Hello,
+Dear SCHOTT team,
 
-Attached is the drawing for our cooktop requirement.
-Please quote for 250 units.
+We would like to request a quote for the following cooktop:
+Drawing number 4K-WH, black glass ceramic, 75 units.
+Overall dimensions 580 x 519 mm.
 
-The specification is per the drawing.
+Delivery required by 15 August 2026.
 
-Regards,
-Purchasing
-Customer B Ltd.
-
---boundary-inj-002
-Content-Type: application/pdf; name="drawing_spec.pdf"
-Content-Disposition: attachment; filename="drawing_spec.pdf"
-Content-Transfer-Encoding: base64
-X-Attachment-File-Path: ./attachments/drawing_with_injection.pdf
-
-PLACEHOLDER_BASE64_CONTENT
---boundary-inj-002--
+Best regards
+Thomas Becker
+Head of Purchasing
+Customer E Ltd
