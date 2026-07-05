@@ -28,10 +28,21 @@ from pydantic import BaseModel, Field
 
 # ---------- CONFIG ----------
 load_dotenv()
+
+# Read from Streamlit secrets first (for cloud deploy), fall back to env var (for local dev)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Fallback: try Streamlit secrets (only works when running under Streamlit)
+if not GEMINI_API_KEY:
+    try:
+        import streamlit as _st
+        GEMINI_API_KEY = _st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        pass
+
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY missing from .env")
+    raise RuntimeError("GEMINI_API_KEY missing from .env or Streamlit secrets")
 genai.configure(api_key=GEMINI_API_KEY)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -199,11 +210,7 @@ def extract_from_drawing(image: Image.Image, max_retries: int = 3) -> DrawingExt
 
 
 def extract_hints_from_email_body(body_text: str, max_retries: int = 3) -> dict:
-    """AI extraction of structured hints from email prose. Includes cooking zones.
-
-    Extracts what the human customer claimed about the drawing — used for cross-source
-    validation against the actual PDF content.
-    """
+    """AI extraction of structured hints from email prose. Includes cooking zones."""
     if not body_text.strip():
         return {}
 
@@ -445,13 +452,11 @@ def parse_eml(eml_path: Path) -> ParsedEmail:
                 if is_attachment:
                     file_path_hdr = part.get("X-Attachment-File-Path")
                     if file_path_hdr:
-                        # Absolute-path or relative-path pointer to file on disk
                         attachment_path = Path(file_path_hdr)
                         if not attachment_path.is_absolute():
                             attachment_path = (eml_path.parent / file_path_hdr).resolve()
                         result.attachment_paths.append(str(attachment_path))
                     else:
-                        # Real embedded base64 attachment
                         filename = part.get_filename() or "attachment.pdf"
                         payload = part.get_payload(decode=True)
                         if payload:
@@ -484,18 +489,9 @@ def _normalize_str(s: Optional[str]) -> Optional[str]:
 
 
 def compare_email_and_pdf(email_hints: dict, pdf_extraction: dict) -> list[CrossSourceIssue]:
-    """Compare structured email hints against PDF extraction. Deterministic.
-
-    Layers checked:
-    - Material (semantic mismatch → error, partial overlap → warning)
-    - Drawing number (any mismatch → error)
-    - Overall dimensions (>5% difference → error)
-    - Cooking zone diameters per zone_id (>3% difference → error)
-    - Zone presence (in email but not PDF, or vice versa → warning)
-    """
+    """Compare structured email hints against PDF extraction. Deterministic."""
     issues: list[CrossSourceIssue] = []
 
-    # ---- Material mismatch ----
     email_mat = _normalize_str(email_hints.get("material"))
     pdf_mat = _normalize_str(pdf_extraction.get("material"))
     if email_mat and pdf_mat and email_mat != pdf_mat:
@@ -509,7 +505,6 @@ def compare_email_and_pdf(email_hints: dict, pdf_extraction: dict) -> list[Cross
             severity=severity,
         ))
 
-    # ---- Drawing number mismatch ----
     email_dn = email_hints.get("drawing_number")
     pdf_dn = pdf_extraction.get("drawing_number")
     if email_dn and pdf_dn and _normalize_str(email_dn) != _normalize_str(pdf_dn):
@@ -521,7 +516,6 @@ def compare_email_and_pdf(email_hints: dict, pdf_extraction: dict) -> list[Cross
             severity="error",
         ))
 
-    # ---- Overall dimension mismatches ----
     for dim_field in ["overall_length_mm", "overall_width_mm"]:
         e_val = email_hints.get(dim_field)
         p_val = pdf_extraction.get(dim_field)
@@ -540,7 +534,6 @@ def compare_email_and_pdf(email_hints: dict, pdf_extraction: dict) -> list[Cross
             except (ValueError, TypeError):
                 pass
 
-    # ---- Cooking zone comparisons ----
     email_zones = email_hints.get("cooking_zones") or []
     pdf_zones = pdf_extraction.get("cooking_zones") or []
 
@@ -636,19 +629,22 @@ def _validation_to_dict(rep: ValidationReport) -> dict:
 
 # ---------- ORCHESTRATORS ----------
 def process_email(eml_path: Path) -> PipelineResult:
-    """Full pipeline for an .eml file."""
+    """Full pipeline for an .eml file. Review reasons are business-friendly language."""
     result = PipelineResult(source_path=str(eml_path))
     parsed = parse_eml(eml_path)
     result.parsed_email = parsed
     if parsed.parse_error:
-        result.add_review_reason(f"Email could not be parsed: {parsed.parse_error}")
+        result.add_review_reason(
+            "The customer email could not be read. Please contact the customer to re-send."
+        )
         result.pipeline_status = "rejected"
         return result
 
     result.pdf_present = parsed.has_pdf_attachment
     if not result.pdf_present:
         result.add_review_reason(
-            "Email arrived without any PDF attachment. Contact sender to request the drawing."
+            "The customer email arrived without a CAD drawing attachment. "
+            "Please contact the sender to request the drawing."
         )
 
     if result.pdf_present:
@@ -658,17 +654,20 @@ def process_email(eml_path: Path) -> PipelineResult:
             _ = len(doc)
             doc.close()
             result.pdf_parseable = True
-        except Exception as e:
+        except Exception:
             result.pdf_parseable = False
             result.add_review_reason(
-                f"PDF attachment could not be opened ({type(e).__name__}). "
-                f"Request customer to re-send the drawing."
+                "The CAD drawing attachment could not be opened. "
+                "Please request the customer to re-send the drawing."
             )
 
     body_scan = scan_text_for_injection(parsed.body_text, location="email_body")
     result.injection_scan_body = _injection_to_dict(body_scan)
     if body_scan.injection_detected:
-        result.add_review_reason(f"Prompt injection detected in email body: {body_scan.summary()}")
+        result.add_review_reason(
+            "Suspicious instructions were detected in the customer email. "
+            "The message has been routed for human review before ERP processing."
+        )
 
     if result.pdf_parseable:
         pdf_path = Path(parsed.first_pdf_attachment)
@@ -678,7 +677,10 @@ def process_email(eml_path: Path) -> PipelineResult:
         pdf_scan = scan_text_for_injection(pdf_text, location=f"pdf:{pdf_path.name}")
         result.injection_scan_pdf = _injection_to_dict(pdf_scan)
         if pdf_scan.injection_detected:
-            result.add_review_reason(f"Prompt injection detected in PDF: {pdf_scan.summary()}")
+            result.add_review_reason(
+                "Suspicious instructions were detected inside the CAD drawing. "
+                "The drawing has been routed for human review before ERP processing."
+            )
 
     if parsed.body_text:
         result.email_hints = extract_hints_from_email_body(parsed.body_text)
@@ -691,9 +693,8 @@ def process_email(eml_path: Path) -> PipelineResult:
         result.image_quality_warnings = img_warnings
         if img_quality < IMAGE_QUALITY_THRESHOLD:
             result.add_review_reason(
-                f"Source image quality too low for reliable AI extraction "
-                f"(quality {img_quality:.2f}). Reasons: {'; '.join(img_warnings)}. "
-                f"Request higher-quality source from customer."
+                "The CAD drawing quality was too low for reliable extraction. "
+                "A higher-quality version of the drawing is required from the customer."
             )
 
     if (result.pdf_parseable
@@ -702,8 +703,11 @@ def process_email(eml_path: Path) -> PipelineResult:
         try:
             extraction = extract_from_drawing(image_for_extraction)
             result.pdf_extraction = extraction.model_dump()
-        except Exception as e:
-            result.add_review_reason(f"AI extraction failed on PDF: {type(e).__name__}")
+        except Exception:
+            result.add_review_reason(
+                "The AI extraction step encountered a technical error. "
+                "The case has been queued for manual processing."
+            )
 
     if result.pdf_extraction:
         quality_score, quality_reasons = compute_extraction_quality_score(result.pdf_extraction)
@@ -711,21 +715,27 @@ def process_email(eml_path: Path) -> PipelineResult:
         result.extraction_quality_reasons = quality_reasons
         if quality_score < CONFIDENCE_THRESHOLD:
             result.add_review_reason(
-                f"Extraction quality {quality_score:.2f} below threshold {CONFIDENCE_THRESHOLD:.2f} — "
-                f"AI could not extract complete information from the drawing"
+                "Some required engineering information could not be extracted from the drawing. "
+                "Human review is required to fill in the missing fields."
             )
 
     if result.pdf_extraction:
         eng_report = validate_extraction(result.pdf_extraction)
         result.engineering_validation = _validation_to_dict(eng_report)
         if eng_report.requires_human_review:
-            result.add_review_reason("Engineering validation flagged issues (see details)")
+            result.add_review_reason(
+                "One or more engineering rule violations were detected. "
+                "See details in the Decision Support panel."
+            )
 
     if result.email_hints and result.pdf_extraction:
         cross = compare_email_and_pdf(result.email_hints, result.pdf_extraction)
         result.cross_source_issues = [asdict(i) for i in cross]
         if cross:
-            result.add_review_reason(f"Email and PDF disagree on {len(cross)} field(s)")
+            result.add_review_reason(
+                f"The customer email and the CAD drawing disagree on {len(cross)} specification(s). "
+                f"Human review is required to determine the correct value."
+            )
 
     if not result.requires_human_review:
         result.pipeline_status = "clean"
@@ -737,10 +747,7 @@ def process_email(eml_path: Path) -> PipelineResult:
 
 
 def process_pdf(pdf_path: Path) -> PipelineResult:
-    """Standalone PDF pipeline. No email context.
-
-    Skips: email parsing, email body security scan, email hints, cross-source validation.
-    """
+    """Standalone PDF pipeline. No email context. Review reasons are business-friendly language."""
     result = PipelineResult(source_path=str(pdf_path))
 
     try:
@@ -749,9 +756,11 @@ def process_pdf(pdf_path: Path) -> PipelineResult:
         doc.close()
         result.pdf_parseable = True
         result.pdf_present = True
-    except Exception as e:
+    except Exception:
         result.pdf_parseable = False
-        result.add_review_reason(f"PDF could not be opened ({type(e).__name__}).")
+        result.add_review_reason(
+            "The CAD drawing could not be opened. Please provide a valid PDF file."
+        )
         result.pipeline_status = "rejected"
         return result
 
@@ -761,7 +770,10 @@ def process_pdf(pdf_path: Path) -> PipelineResult:
     pdf_scan = scan_text_for_injection(pdf_text, location=f"pdf:{pdf_path.name}")
     result.injection_scan_pdf = _injection_to_dict(pdf_scan)
     if pdf_scan.injection_detected:
-        result.add_review_reason(f"Prompt injection detected in PDF: {pdf_scan.summary()}")
+        result.add_review_reason(
+            "Suspicious instructions were detected inside the CAD drawing. "
+            "The drawing has been routed for human review before ERP processing."
+        )
 
     image_for_extraction = render_pdf_page_to_image(pdf_path)
     img_quality, img_warnings = assess_image_quality(image_for_extraction)
@@ -769,16 +781,19 @@ def process_pdf(pdf_path: Path) -> PipelineResult:
     result.image_quality_warnings = img_warnings
     if img_quality < IMAGE_QUALITY_THRESHOLD:
         result.add_review_reason(
-            f"Source image quality too low for reliable AI extraction "
-            f"(quality {img_quality:.2f}). Reasons: {'; '.join(img_warnings)}."
+            "The CAD drawing quality was too low for reliable extraction. "
+            "A higher-quality version is required."
         )
 
     if result.image_quality_score is not None and result.image_quality_score >= IMAGE_QUALITY_THRESHOLD:
         try:
             extraction = extract_from_drawing(image_for_extraction)
             result.pdf_extraction = extraction.model_dump()
-        except Exception as e:
-            result.add_review_reason(f"AI extraction failed on PDF: {type(e).__name__}")
+        except Exception:
+            result.add_review_reason(
+                "The AI extraction step encountered a technical error. "
+                "The case has been queued for manual processing."
+            )
 
     if result.pdf_extraction:
         quality_score, quality_reasons = compute_extraction_quality_score(result.pdf_extraction)
@@ -786,13 +801,17 @@ def process_pdf(pdf_path: Path) -> PipelineResult:
         result.extraction_quality_reasons = quality_reasons
         if quality_score < CONFIDENCE_THRESHOLD:
             result.add_review_reason(
-                f"Extraction quality {quality_score:.2f} below threshold {CONFIDENCE_THRESHOLD:.2f}"
+                "Some required engineering information could not be extracted from the drawing. "
+                "Human review is required to fill in the missing fields."
             )
 
         eng_report = validate_extraction(result.pdf_extraction)
         result.engineering_validation = _validation_to_dict(eng_report)
         if eng_report.requires_human_review:
-            result.add_review_reason("Engineering validation flagged issues")
+            result.add_review_reason(
+                "One or more engineering rule violations were detected. "
+                "See details in the Decision Support panel."
+            )
 
     if not result.requires_human_review:
         result.pipeline_status = "clean"

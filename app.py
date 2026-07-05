@@ -215,6 +215,27 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# Review reasons — prominently displayed under banner
+if result.review_reasons:
+    st.subheader("🚨 Reasons for human review")
+    for reason in result.review_reasons:
+        st.markdown(
+            f"""
+            <div style='
+                background-color: #fef3c7;
+                border-left: 4px solid #d97706;
+                padding: 12px 16px;
+                margin-bottom: 8px;
+                border-radius: 4px;
+                font-size: 14px;
+                color: #78350f;
+            '>
+                ⚠️ {reason}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
 st.markdown("---")
 
 # ================================================================
@@ -245,7 +266,7 @@ with col_email:
         else:
             st.error("❌ No attachments found in this email")
 
-        # Email security alert — plain language
+        # Email body injection scan — plain language + raw text reveal
         if result.injection_scan_body and result.injection_scan_body.get("injection_detected"):
             st.warning(
                 "⚠️ **Security validation triggered**\n\n"
@@ -255,6 +276,13 @@ with col_email:
             with st.expander("🔧 Technical details"):
                 st.caption(f"Severity: **{result.injection_scan_body['severity']}**")
                 st.caption(f"Matches found: {len(result.injection_scan_body['matches'])}")
+
+                # Show the raw email body (contains the injection)
+                if result.parsed_email and result.parsed_email.body_text:
+                    st.caption("**Raw email body (contains the hidden injection):**")
+                    st.text_area("Raw email body",value=result.parsed_email.body_text.strip(),height=140,disabled=True,label_visibility="collapsed",)
+
+                st.caption("**Matched patterns:**")
                 for m in result.injection_scan_body["matches"]:
                     st.code(f"[{m['category']}] {m['matched_text']}")
     else:
@@ -290,7 +318,7 @@ with col_pdf:
         except Exception:
             pass
 
-    # PDF security alert — plain language with reassurance
+    # PDF security alert — plain language + raw text reveal
     if result.injection_scan_pdf and result.injection_scan_pdf.get("injection_detected"):
         st.warning(
             "⚠️ **Security validation triggered**\n\n"
@@ -302,6 +330,30 @@ with col_pdf:
         with st.expander("🔧 Technical details"):
             st.caption(f"Severity: **{result.injection_scan_pdf['severity']}**")
             st.caption(f"Matches found: {len(result.injection_scan_pdf['matches'])}")
+
+            # Show the raw injection text pulled from the PDF's text stream
+            pdf_for_raw = None
+            if result.parsed_email and result.parsed_email.first_pdf_attachment:
+                pdf_for_raw = Path(result.parsed_email.first_pdf_attachment)
+            elif not result.parsed_email:
+                pdf_for_raw = Path(source_path)
+
+            if pdf_for_raw is not None and pdf_for_raw.exists():
+                try:
+                    import fitz as _fitz
+                    _doc = _fitz.open(pdf_for_raw)
+                    _raw_pdf_text = "\n".join(p.get_text() for p in _doc)
+                    _doc.close()
+                    if _raw_pdf_text.strip():
+                        st.caption(
+                            "**Raw text extracted from PDF text stream** "
+                            "(invisible to human readers — the injection was hidden as white text along the margin):"
+                        )
+                        st.text_area("Raw PDF text",value=_raw_pdf_text.strip(),height=100,disabled=True,label_visibility="collapsed",)
+                except Exception:
+                    pass
+
+            st.caption("**Matched patterns:**")
             for m in result.injection_scan_pdf["matches"]:
                 st.code(f"[{m['category']}] {m['matched_text']}")
 
@@ -330,7 +382,6 @@ with col_pdf:
     elif result.image_quality_score is not None and result.image_quality_score < 0.5:
         st.warning("AI extraction was skipped due to low drawing quality.")
 
-# ---------- Column 3: Decision Support ----------
 # ---------- Column 3: Decision Support ----------
 with col_decision:
     st.subheader("🔍 Decision Support")
@@ -365,7 +416,6 @@ with col_decision:
             "**Overall Confidence:** <span style='color: #991b1b; font-weight: 700; font-size: 18px;'>Low</span>",
             unsafe_allow_html=True,
         )
-        st.progress(0.0)
         st.caption("The document could not be extracted with sufficient confidence.")
 
     st.markdown("---")
@@ -450,7 +500,6 @@ if result.pdf_extraction and result.email_hints:
     ext = result.pdf_extraction
     hints = result.email_hints
 
-    # Build a unified comparison list
     fields_to_compare = [
         ("Material", hints.get("material"), ext.get("material")),
         ("Drawing number", hints.get("drawing_number"), ext.get("drawing_number")),
@@ -458,7 +507,6 @@ if result.pdf_extraction and result.email_hints:
         ("Overall width (mm)", hints.get("overall_width_mm"), ext.get("overall_width_mm")),
     ]
 
-    # Also include zones if any
     email_zones = hints.get("cooking_zones") or []
     pdf_zones = ext.get("cooking_zones") or []
     email_zone_map = {z.get("zone_id"): z.get("diameter_mm") for z in email_zones if isinstance(z, dict)}
@@ -469,23 +517,11 @@ if result.pdf_extraction and result.email_hints:
                 (f"Zone {zid} (mm)", email_zone_map.get(zid), pdf_zone_map.get(zid))
             )
 
-    # Which of these are in the conflict list?
-    conflict_fields = set()
-    for c in result.cross_source_issues:
-        conflict_fields.add(c["field"])
-
-    # Render cards in a grid
     cards_per_row = 2
     for i in range(0, len(fields_to_compare), cards_per_row):
         cols = st.columns(cards_per_row)
         for j, (field, email_val, pdf_val) in enumerate(fields_to_compare[i:i+cards_per_row]):
             with cols[j]:
-                is_conflict = (
-                    field.lower().replace(" ", "_").replace("(mm)", "").strip("_") in
-                    {f.lower() for f in conflict_fields}
-                ) or any(cf in field.lower() for cf in ["material", "drawing", "length", "width", "zone"] if cf in " ".join(conflict_fields).lower())
-
-                # Simpler: check if any conflict message mentions this field
                 relevant_conflict = None
                 for c in result.cross_source_issues:
                     if field.lower().split("(")[0].strip().replace(" ", "_") in c["field"].lower():
@@ -499,7 +535,6 @@ if result.pdf_extraction and result.email_hints:
 
                 is_conflict = relevant_conflict is not None
 
-                # Determine match status
                 if email_val is None and pdf_val is None:
                     continue
                 elif email_val is None:
@@ -569,7 +604,6 @@ if result.pdf_extraction and status == "clean":
             use_container_width=True,
         )
     with dl_col2:
-        # CSV: flatten for spreadsheet import
         import csv
         csv_buffer = io.StringIO()
         writer = csv.writer(csv_buffer)
@@ -595,7 +629,7 @@ elif status == "review_required":
         "SAP creation is paused pending human review. In future versions, "
         "SAP material master records will be created automatically after successful validation."
     )
-else:  # rejected
+else:
     st.error(
         "**SAP JSON not generated**\n\n"
         "**Reason:** Processing failed. Customer action required.\n\n"
