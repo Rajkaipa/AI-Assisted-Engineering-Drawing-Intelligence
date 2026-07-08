@@ -25,21 +25,22 @@ output — but only when every validation layer agrees the data is safe to send.
 - 📤 Generates SAP-ready output — **only when every validation layer passes**
 
 ## Architecture
-Customer Email
-↓
-Ingestion (email parsing, PDF identification)
-↓
-Security & Quality Gates  ← deterministic, runs BEFORE AI
-↓
-Vision AI Extraction  ← Gemini 2.5 Flash + Pydantic schema
-↓
-Engineering Validation  ← deterministic, runs AFTER AI
-↓
-Cross-source Reconciliation  ← email claims vs drawing content
-↓
-Business Decision  →  🟢 SAP  |  🟡 Human Review  |  🔴 Customer Action
 
----
+```
+Customer Email
+    ↓
+Ingestion (email parsing, PDF identification)
+    ↓
+Security & Quality Gates  ← deterministic, runs BEFORE AI
+    ↓
+Vision AI Extraction  ← Gemini 2.5 Flash + Pydantic schema
+    ↓
+Engineering Validation  ← deterministic, runs AFTER AI
+    ↓
+Cross-source Reconciliation  ← email claims vs drawing content
+    ↓
+Business Decision  →  🟢 SAP  |  🟡 Human Review  |  🔴 Customer Action
+```
 
 **Design principle:** AI where it adds unique value (visual interpretation of varied CAD layouts).
 Deterministic code everywhere else (security, validation, routing, gates).
@@ -94,6 +95,7 @@ The app opens at `http://localhost:8501`. Select any demo scenario from the side
 
 ## Project structure
 
+```
 .
 ├── app.py                          # Streamlit UI (presentation layer)
 ├── src/
@@ -109,6 +111,7 @@ The app opens at `http://localhost:8501`. Select any demo scenario from the side
 ├── requirements.txt
 ├── .env.example
 └── README.md
+```
 
 ## Key design decisions
 
